@@ -2,59 +2,89 @@ package cmd
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"os"
 	"strings"
 
 	"Rana718/Graft/internal/config"
-	"Rana718/Graft/internal/migration"
+	"Rana718/Graft/internal/migrator"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/spf13/cobra"
 )
 
 // migrateCmd represents the migrate command
 var migrateCmd = &cobra.Command{
-	Use:   "migrate [migration_name]",
+	Use:   "migrate [name]",
 	Short: "Create a new migration",
 	Long: `Create a new migration file with the specified name.
-If no name is provided, you will be prompted to enter one.`,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		if !config.IsInitialized() {
-			return fmt.Errorf("graft is not initialized. Run 'graft init' first")
-		}
+If no name is provided, you will be prompted to enter one.
 
-		cfg, err := config.LoadConfig()
+Examples:
+  graft migrate "create users table"
+  graft migrate "add email index"
+  graft migrate  # Interactive mode`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		cfg, err := config.Load()
 		if err != nil {
 			return fmt.Errorf("failed to load config: %w", err)
+		}
+
+		if err := cfg.Validate(); err != nil {
+			return fmt.Errorf("invalid config: %w", err)
+		}
+
+		if err := cfg.EnsureDirectories(); err != nil {
+			return fmt.Errorf("failed to create directories: %w", err)
 		}
 
 		var migrationName string
 		if len(args) > 0 {
 			migrationName = strings.Join(args, " ")
 		} else {
+			// Interactive mode
 			fmt.Print("Enter migration name: ")
 			reader := bufio.NewReader(os.Stdin)
-			migrationName, err = reader.ReadString('\n')
+			input, err := reader.ReadString('\n')
 			if err != nil {
-				return fmt.Errorf("failed to read migration name: %w", err)
+				return fmt.Errorf("failed to read input: %w", err)
 			}
-			migrationName = strings.TrimSpace(migrationName)
+			migrationName = strings.TrimSpace(input)
 		}
 
 		if migrationName == "" {
 			return fmt.Errorf("migration name cannot be empty")
 		}
 
-		migrationManager, err := migration.NewManager(cfg)
+		// Connect to database
+		dbURL, err := cfg.GetDatabaseURL()
 		if err != nil {
-			return fmt.Errorf("failed to create migration manager: %w", err)
+			return err
 		}
 
-		_, err = migrationManager.CreateMigration(migrationName)
+		ctx := context.Background()
+		config, err := pgxpool.ParseConfig(dbURL)
 		if err != nil {
-			return fmt.Errorf("failed to create migration: %w", err)
+			return fmt.Errorf("failed to parse database URL: %w", err)
 		}
 
-		return nil
+		config.ConnConfig.DefaultQueryExecMode = pgx.QueryExecModeSimpleProtocol
+
+		db, err := pgxpool.NewWithConfig(ctx, config)
+		if err != nil {
+			return fmt.Errorf("failed to create connection pool: %w", err)
+		}
+		defer db.Close()
+
+		if err := db.Ping(ctx); err != nil {
+			return fmt.Errorf("failed to connect to database: %w", err)
+		}
+
+		force, _ := cmd.Flags().GetBool("force")
+		m := migrator.NewMigrator(db, cfg.MigrationsPath, cfg.BackupPath, force)
+
+		return m.GenerateMigration(migrationName)
 	},
 }
 
