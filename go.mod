@@ -1,6 +1,6 @@
 module github.com/Rana718/Graft
 
-go 1.24.2
+go 1.18
 
 require (
 	github.com/Masterminds/squirrel v1.5.4

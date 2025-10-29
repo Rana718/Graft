@@ -1,0 +1,145 @@
+-- Generated from schema.raft
+
+CREATE TABLE user (
+  id SERIAL PRIMARY KEY,
+  email VARCHAR(255) NOT NULL UNIQUE,
+  username VARCHAR(255) NOT NULL UNIQUE,
+  password VARCHAR(255) NOT NULL,
+  first_name VARCHAR(255) NOT NULL,
+  last_name VARCHAR(255) NOT NULL,
+  avatar VARCHAR(255),
+  bio TEXT,
+  website VARCHAR(255),
+  is_verified BOOLEAN NOT NULL DEFAULT false,
+  is_active BOOLEAN NOT NULL DEFAULT false,
+  role VARCHAR(255) NOT NULL DEFAULT "user",
+  last_login_at TIMESTAMP,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE post (
+  id SERIAL PRIMARY KEY,
+  title VARCHAR(255) NOT NULL,
+  slug VARCHAR(255) NOT NULL UNIQUE,
+  content TEXT NOT NULL,
+  excerpt TEXT,
+  cover_image VARCHAR(255),
+  published BOOLEAN NOT NULL DEFAULT false,
+  featured BOOLEAN NOT NULL DEFAULT false,
+  views INTEGER NOT NULL DEFAULT 0,
+  author_id INTEGER NOT NULL,
+  category_id INTEGER NOT NULL,
+  published_at TIMESTAMP,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (author_id) REFERENCES user(id),
+  FOREIGN KEY (category_id) REFERENCES category(id)
+);
+
+CREATE TABLE category (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(255) NOT NULL UNIQUE,
+  slug VARCHAR(255) NOT NULL UNIQUE,
+  description TEXT,
+  icon VARCHAR(255),
+  parent_id INTEGER,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  is_active BOOLEAN NOT NULL DEFAULT false,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE tag (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(255) NOT NULL UNIQUE,
+  slug VARCHAR(255) NOT NULL UNIQUE,
+  description TEXT,
+  color VARCHAR(255),
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE post_tag (
+  id SERIAL PRIMARY KEY,
+  post_id INTEGER NOT NULL,
+  tag_id INTEGER NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (post_id) REFERENCES post(id),
+  FOREIGN KEY (tag_id) REFERENCES tag(id)
+);
+
+CREATE TABLE comment (
+  id SERIAL PRIMARY KEY,
+  content TEXT NOT NULL,
+  post_id INTEGER NOT NULL,
+  user_id INTEGER NOT NULL,
+  parent_id INTEGER,
+  is_approved BOOLEAN NOT NULL DEFAULT false,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (post_id) REFERENCES post(id),
+  FOREIGN KEY (user_id) REFERENCES user(id)
+);
+
+CREATE TABLE like (
+  id SERIAL PRIMARY KEY,
+  post_id INTEGER NOT NULL,
+  user_id INTEGER NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (post_id) REFERENCES post(id),
+  FOREIGN KEY (user_id) REFERENCES user(id)
+);
+
+CREATE TABLE bookmark (
+  id SERIAL PRIMARY KEY,
+  post_id INTEGER NOT NULL,
+  user_id INTEGER NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (post_id) REFERENCES post(id),
+  FOREIGN KEY (user_id) REFERENCES user(id)
+);
+
+CREATE TABLE follow (
+  id SERIAL PRIMARY KEY,
+  follower_id INTEGER NOT NULL,
+  following_id INTEGER NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (follower_id) REFERENCES user(id),
+  FOREIGN KEY (following_id) REFERENCES user(id)
+);
+
+CREATE TABLE notification (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL,
+  type VARCHAR(255) NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  message TEXT NOT NULL,
+  link VARCHAR(255),
+  is_read BOOLEAN NOT NULL DEFAULT false,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES user(id)
+);
+
+CREATE TABLE media (
+  id SERIAL PRIMARY KEY,
+  filename VARCHAR(255) NOT NULL,
+  original_name VARCHAR(255) NOT NULL,
+  mime_type VARCHAR(255) NOT NULL,
+  size INTEGER NOT NULL,
+  path VARCHAR(255) NOT NULL,
+  url VARCHAR(255) NOT NULL,
+  user_id INTEGER NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES user(id)
+);
+
+CREATE TABLE page_view (
+  id SERIAL PRIMARY KEY,
+  post_id INTEGER NOT NULL,
+  user_id INTEGER,
+  ip_address VARCHAR(255) NOT NULL,
+  user_agent TEXT NOT NULL,
+  referer VARCHAR(255),
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (post_id) REFERENCES post(id)
+);
+

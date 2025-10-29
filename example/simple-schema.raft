@@ -1,0 +1,22 @@
+// Simple Todo App Schema
+// Perfect for beginners learning Graft
+
+model User = {
+  id Int @id
+  email String @unique
+  username String @unique
+  password String
+  createdAt DateTime @default
+}
+
+model Todo = {
+  id Int @id
+  title String
+  description Text @optional
+  completed Boolean @default
+  priority String @default("medium")
+  dueDate DateTime @optional
+  userId Int @relation(User.id)
+  createdAt DateTime @default
+  updatedAt DateTime @default
+}

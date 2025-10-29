@@ -1,0 +1,142 @@
+// Blog Platform Schema Example
+// Demonstrates all .raft features
+
+// User Management
+model User = {
+  id Int @id
+  email String @unique
+  username String @unique
+  password String
+  firstName String
+  lastName String
+  avatar String @optional
+  bio Text @optional
+  website String @optional
+  isVerified Boolean @default
+  isActive Boolean @default
+  role String @default("user")
+  lastLoginAt DateTime @optional
+  createdAt DateTime @default
+  updatedAt DateTime @default
+}
+
+// Blog Posts
+model Post = {
+  id Int @id
+  title String
+  slug String @unique
+  content Text
+  excerpt Text @optional
+  coverImage String @optional
+  published Boolean @default
+  featured Boolean @default
+  views Int @default(0)
+  authorId Int @relation(User.id)
+  categoryId Int @relation(Category.id)
+  publishedAt DateTime @optional
+  createdAt DateTime @default
+  updatedAt DateTime @default
+}
+
+// Categories
+model Category = {
+  id Int @id
+  name String @unique
+  slug String @unique
+  description Text @optional
+  icon String @optional
+  parentId Int @optional
+  sortOrder Int @default(0)
+  isActive Boolean @default
+  createdAt DateTime @default
+}
+
+// Tags
+model Tag = {
+  id Int @id
+  name String @unique
+  slug String @unique
+  description Text @optional
+  color String @optional
+  createdAt DateTime @default
+}
+
+// Post-Tag Relationship (Many-to-Many)
+model PostTag = {
+  id Int @id
+  postId Int @relation(Post.id)
+  tagId Int @relation(Tag.id)
+  createdAt DateTime @default
+}
+
+// Comments
+model Comment = {
+  id Int @id
+  content Text
+  postId Int @relation(Post.id)
+  userId Int @relation(User.id)
+  parentId Int @optional
+  isApproved Boolean @default
+  createdAt DateTime @default
+  updatedAt DateTime @default
+}
+
+// Likes
+model Like = {
+  id Int @id
+  postId Int @relation(Post.id)
+  userId Int @relation(User.id)
+  createdAt DateTime @default
+}
+
+// Bookmarks
+model Bookmark = {
+  id Int @id
+  postId Int @relation(Post.id)
+  userId Int @relation(User.id)
+  createdAt DateTime @default
+}
+
+// Followers
+model Follow = {
+  id Int @id
+  followerId Int @relation(User.id)
+  followingId Int @relation(User.id)
+  createdAt DateTime @default
+}
+
+// Notifications
+model Notification = {
+  id Int @id
+  userId Int @relation(User.id)
+  type String
+  title String
+  message Text
+  link String @optional
+  isRead Boolean @default
+  createdAt DateTime @default
+}
+
+// Media/Files
+model Media = {
+  id Int @id
+  filename String
+  originalName String
+  mimeType String
+  size Int
+  path String
+  url String
+  userId Int @relation(User.id)
+  createdAt DateTime @default
+}
+
+// Analytics
+model PageView = {
+  id Int @id
+  postId Int @relation(Post.id)
+  userId Int @optional
+  ipAddress String
+  userAgent Text
+  referer String @optional
+  createdAt DateTime @default
+}
